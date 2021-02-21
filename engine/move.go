@@ -24,6 +24,8 @@ const (
 	EnPassant
 	// Check indicates that the move puts the opposing player in check.
 	Check
+	// An invalid move, that puts the moving side in check
+	Invalid
 )
 
 func (m *Move) SetTag(tag MoveTag)      { m.Tag |= tag }

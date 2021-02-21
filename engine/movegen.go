@@ -33,6 +33,32 @@ func (p *Position) LegalMoves() []*Move {
 	return allMoves
 }
 
+func (p *Position) PsuedoLegalMoves() []*Move {
+	allMoves := make([]*Move, 0, 350)
+
+	add := func(ms ...*Move) {
+		allMoves = append(allMoves, ms...)
+	}
+
+	p.generateMoves(add, false)
+
+	return allMoves
+}
+
+func (p *Position) ValidateMove(move *Move, movingSide Color) bool {
+	pInCheck := isInCheck(p.Board, movingSide)
+
+	if !pInCheck && isInCheck(p.Board, movingSide.Turn()) { // We put opponent in check
+		m.SetTag(Check)
+	}
+
+	if !pInCheck { // The move does not put us in check
+		// do nothing
+		return false
+	}
+	return true
+}
+
 func (p *Position) QuiesceneMoves(withChecks bool) []*Move {
 	allMoves := make([]*Move, 0, 40)
 
