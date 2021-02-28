@@ -207,11 +207,11 @@ func (e *Engine) alphaBeta(position *Position, depthLeft int8, searchHeight int8
 	cachedEval, found := TranspositionTable.Get(hash)
 	if found && cachedEval.Depth >= depthLeft {
 		score := cachedEval.Eval
-		if score >= beta && (cachedEval.Type == UpperBound || cachedEval.Type == Exact) {
+		if score >= beta && (cachedEval.Type == LowerBound || cachedEval.Type == Exact) {
 			e.CacheHit()
 			return beta, true
 		}
-		if score <= alpha && (cachedEval.Type == LowerBound || cachedEval.Type == Exact) {
+		if score <= alpha && (cachedEval.Type == UpperBound || cachedEval.Type == Exact) {
 			e.CacheHit()
 			return alpha, true
 		}
@@ -259,6 +259,9 @@ func (e *Engine) alphaBeta(position *Position, depthLeft int8, searchHeight int8
 			return score, false
 		}
 		if score >= bound {
+			if score == CHECKMATE_EVAL || score == -CHECKMATE_EVAL {
+				return score, true // let's not fool ourselves
+			}
 			return beta, true // null move pruning
 		}
 	}
@@ -324,7 +327,7 @@ func (e *Engine) alphaBeta(position *Position, depthLeft int8, searchHeight int8
 		if bestscore >= beta {
 			// Those scores are never useful
 			if bestscore != -MAX_INT && bestscore != MAX_INT {
-				TranspositionTable.Set(hash, CachedEval{hash, bestscore, depthLeft, UpperBound, ply})
+				TranspositionTable.Set(hash, CachedEval{hash, bestscore, depthLeft, LowerBound, ply})
 			}
 			e.AddKillerMove(move, searchHeight)
 			return bestscore, true
@@ -380,13 +383,12 @@ func (e *Engine) alphaBeta(position *Position, depthLeft int8, searchHeight int8
 		}
 		position.UnMakeMove(move, oldTag, oldEnPassant, capturedPiece, hc)
 
-		if score > bestscore { //}||
-			// (score == CHECKMATE_EVAL && score >= alpha &&
-			// (pvline == nil || pvline.moveCount < line.moveCount+1)) { // shorter checkmate?
+		if score > bestscore {
 			if score >= beta {
 				// Those scores are never useful
 				if score != -MAX_INT && score != MAX_INT {
-					TranspositionTable.Set(hash, CachedEval{hash, score, depthLeft, UpperBound, ply})
+					// returned line never accounts for the current line
+					TranspositionTable.Set(hash, CachedEval{hash, score, depthLeft, LowerBound, ply})
 				}
 				e.AddKillerMove(move, searchHeight)
 				return score, ok
@@ -403,7 +405,7 @@ func (e *Engine) alphaBeta(position *Position, depthLeft int8, searchHeight int8
 	if hasSeenExact {
 		TranspositionTable.Set(hash, CachedEval{hash, alpha, depthLeft, Exact, ply})
 	} else {
-		TranspositionTable.Set(hash, CachedEval{hash, bestscore, depthLeft, LowerBound, ply})
+		TranspositionTable.Set(hash, CachedEval{hash, bestscore, depthLeft, UpperBound, ply})
 	}
 	return bestscore, true
 }
