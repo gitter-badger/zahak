@@ -201,14 +201,13 @@ func (e *Engine) alphaBeta(position *Position, depthLeft int8, searchHeight int8
 	}
 
 	hash := position.Hash()
-	cachedEval, found := TranspositionTable.Get(hash)
-	if found && cachedEval.Depth >= depthLeft {
-		score := cachedEval.Eval
-		if score >= beta && (cachedEval.Type == UpperBound || cachedEval.Type == Exact) {
+	ttEval, depth, nodeType, found := TranspositionTable.Get(hash)
+	if found && depth >= depthLeft {
+		if ttEval >= beta && (nodeType == UpperBound || nodeType == Exact) {
 			e.CacheHit()
 			return beta, true
 		}
-		if score <= alpha && (cachedEval.Type == LowerBound || cachedEval.Type == Exact) {
+		if ttEval <= alpha && (nodeType == LowerBound || nodeType == Exact) {
 			e.CacheHit()
 			return alpha, true
 		}
@@ -333,7 +332,7 @@ func (e *Engine) alphaBeta(position *Position, depthLeft int8, searchHeight int8
 		if bestscore >= beta {
 			// Those scores are never useful
 			if bestscore != -MAX_INT && bestscore != MAX_INT {
-				TranspositionTable.Set(hash, CachedEval{hash, bestscore, depthLeft, UpperBound, ply})
+				TranspositionTable.Set(hash, bestscore, depthLeft, UpperBound, ply)
 			}
 			e.AddKillerMove(move, searchHeight)
 			return bestscore, true
@@ -395,7 +394,7 @@ func (e *Engine) alphaBeta(position *Position, depthLeft int8, searchHeight int8
 			if score >= beta {
 				// Those scores are never useful
 				if score != -MAX_INT && score != MAX_INT {
-					TranspositionTable.Set(hash, CachedEval{hash, score, depthLeft, UpperBound, ply})
+					TranspositionTable.Set(hash, score, depthLeft, UpperBound, ply)
 				}
 				e.AddKillerMove(move, searchHeight)
 				return score, ok
@@ -410,9 +409,9 @@ func (e *Engine) alphaBeta(position *Position, depthLeft int8, searchHeight int8
 		}
 	}
 	if hasSeenExact {
-		TranspositionTable.Set(hash, CachedEval{hash, alpha, depthLeft, Exact, ply})
+		TranspositionTable.Set(hash, alpha, depthLeft, Exact, ply)
 	} else {
-		TranspositionTable.Set(hash, CachedEval{hash, bestscore, depthLeft, LowerBound, ply})
+		TranspositionTable.Set(hash, bestscore, depthLeft, LowerBound, ply)
 	}
 	return bestscore, true
 }
